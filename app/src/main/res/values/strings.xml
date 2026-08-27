@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Мой цикл</string>
+    <string name="widget_description">День и фаза цикла</string>
+</resources>
