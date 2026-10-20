@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 
 private data class Scheme(val light: ColorScheme, val dark: ColorScheme)
@@ -265,6 +266,42 @@ fun schemePreviewColor(key: String): Color = when (key) {
     else -> Color(0xFF6750A4)
 }
 
+/**
+ * Свои схемы задают только основные цвета, а карточки, навигация и диалоги в Material 3
+ * используют surfaceContainer*. Без них берутся стандартные фиолетовые цвета, которые
+ * не подходят к теме. Выводим их из surface с лёгким оттенком primary.
+ */
+private fun ColorScheme.withSurfaceContainers(dark: Boolean): ColorScheme {
+    fun tint(amount: Float) = lerp(surface, primary, amount)
+    return if (dark) {
+        copy(
+            surfaceContainerLowest = lerp(surface, Color.Black, 0.35f),
+            surfaceContainerLow = tint(0.05f),
+            surfaceContainer = tint(0.08f),
+            surfaceContainerHigh = tint(0.11f),
+            surfaceContainerHighest = tint(0.14f),
+            surfaceBright = tint(0.18f),
+            surfaceDim = surface,
+            surfaceTint = primary,
+            inversePrimary = lerp(primary, Color.Black, 0.45f),
+            outlineVariant = lerp(outline, surface, 0.55f)
+        )
+    } else {
+        copy(
+            surfaceContainerLowest = Color.White,
+            surfaceContainerLow = tint(0.025f),
+            surfaceContainer = tint(0.045f),
+            surfaceContainerHigh = tint(0.065f),
+            surfaceContainerHighest = tint(0.085f),
+            surfaceBright = surface,
+            surfaceDim = tint(0.12f),
+            surfaceTint = primary,
+            inversePrimary = lerp(primary, Color.White, 0.45f),
+            outlineVariant = lerp(outline, surface, 0.6f)
+        )
+    }
+}
+
 @Composable
 fun CycleTrackerTheme(
     themeScheme: String = "rose",
@@ -278,12 +315,13 @@ fun CycleTrackerTheme(
         }
         else -> {
             val scheme = Schemes[themeScheme] ?: RoseScheme
-            if (darkTheme) scheme.dark else scheme.light
+            (if (darkTheme) scheme.dark else scheme.light).withSurfaceContainers(darkTheme)
         }
     }
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = AppShapes,
         content = content
     )
 }

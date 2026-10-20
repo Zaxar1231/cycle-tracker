@@ -43,14 +43,19 @@ class MainActivity : ComponentActivity() {
             val settings by viewModel.settings.collectAsState()
             CycleTrackerTheme(themeScheme = settings.themeScheme) {
                 var locked by rememberSaveable { mutableStateOf(true) }
-                when {
-                    !settings.onboardingDone -> OnboardingScreen(viewModel)
-                    settings.pinEnabled && locked -> PinScreen(
-                        checkPin = { viewModel.checkPin(it) },
-                        onUnlock = { locked = false }
-                    )
-                    else -> BackgroundBox(settings.backgroundUri) {
-                        MainScreen(viewModel)
+                BackgroundBox(
+                    style = settings.backgroundStyle,
+                    photoUri = settings.backgroundUri,
+                    photoDim = settings.backgroundDim,
+                    photoBlur = settings.backgroundBlur
+                ) {
+                    when {
+                        !settings.onboardingDone -> OnboardingScreen(viewModel)
+                        settings.pinEnabled && locked -> PinScreen(
+                            checkPin = { viewModel.checkPin(it) },
+                            onUnlock = { locked = false }
+                        )
+                        else -> MainScreen(viewModel)
                     }
                 }
             }

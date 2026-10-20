@@ -1,5 +1,6 @@
 package com.example.cycletracker.ui.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,13 +13,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,6 +34,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +62,8 @@ import com.example.cycletracker.util.pluralDays
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
+import com.example.cycletracker.ui.components.AppCard
+import com.example.cycletracker.ui.components.AppButton
 
 @Composable
 fun HomeScreen(
@@ -143,7 +153,7 @@ fun HomeScreen(
             }
         }
 
-        Card {
+        AppCard {
             Column(Modifier.padding(16.dp)) {
                 Text(
                     text = YearMonth.of(info.today.year, info.today.month).monthTitle(),
@@ -158,7 +168,7 @@ fun HomeScreen(
                 )
             }
         }
-        Spacer(Modifier.height(72.dp))
+        Spacer(Modifier.height(96.dp))
     }
 
     if (showDiary) {
@@ -176,7 +186,7 @@ fun HomeScreen(
 
 @Composable
 private fun PregnancyCard(p: PregnancyInfo) {
-    Card {
+    AppCard {
         Column(Modifier.padding(20.dp)) {
             Text(
                 text = "Беременность 🤰",
@@ -207,7 +217,7 @@ private fun PregnancyCard(p: PregnancyInfo) {
 @Composable
 private fun ProbabilityCard(info: CycleInfo) {
     val p = pregnancyProbability(info.today, info)
-    Card {
+    AppCard {
         Column(Modifier.padding(16.dp)) {
             Text(
                 text = "Вероятность зачатия сегодня",
@@ -239,7 +249,7 @@ private fun DiaryCard(
     onOpenDiary: () -> Unit,
     onToggleSex: () -> Unit
 ) {
-    Card {
+    AppCard {
         Column(Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -291,7 +301,7 @@ private fun logSummary(log: DailyLog): String {
 
 @Composable
 private fun PillCard(pill: PillSchedule, settings: SettingsState) {
-    Card {
+    AppCard {
         Column(Modifier.padding(16.dp)) {
             Text("💊 Контрацептивы", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
@@ -308,7 +318,7 @@ private fun PillCard(pill: PillSchedule, settings: SettingsState) {
 @Composable
 private fun HormonesCard(offsetFromOvulation: Int) {
     val levels = hormoneLevels(offsetFromOvulation)
-    Card {
+    AppCard {
         Column(Modifier.padding(16.dp)) {
             Text("🧪 Гормоны сегодня", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
@@ -357,11 +367,7 @@ private fun HormonesCard(offsetFromOvulation: Int) {
 
 @Composable
 private fun TipCard(info: CycleInfo) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
+    AppCard(containerColor = MaterialTheme.colorScheme.secondaryContainer) {
         Column(Modifier.padding(16.dp)) {
             Text(
                 text = "💡 Совет дня",
@@ -382,26 +388,35 @@ private fun TipCard(info: CycleInfo) {
 private fun CurrentCycleCard(info: CycleInfo) {
     val phase = currentPhaseLabel(info)
     val delay = delayDays(info)
-    Card {
+    AppCard {
         Column(Modifier.padding(20.dp)) {
-            Text(
-                text = "День цикла",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = info.currentCycleDay?.toString() ?: "—",
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            if (phase != null) {
-                Spacer(Modifier.height(8.dp))
-                Text(phase.first, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    phase.second,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CycleRing(
+                    day = info.currentCycleDay,
+                    length = info.avgCycleLength
                 )
+                Spacer(Modifier.width(20.dp))
+                Column(Modifier.weight(1f)) {
+                    if (phase != null) {
+                        Text(
+                            text = phase.first,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            phase.second,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Средний цикл: ${info.avgCycleLength} ${pluralDays(info.avgCycleLength.toLong())}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             if (delay != null && delay > 0 && info.nextPeriodStart != null) {
                 Spacer(Modifier.height(12.dp))
@@ -422,8 +437,48 @@ private fun CurrentCycleCard(info: CycleInfo) {
 }
 
 @Composable
+private fun CycleRing(day: Int?, length: Int) {
+    val scheme = MaterialTheme.colorScheme
+    val progress = if (day == null) 0f else (day.toFloat() / length.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val track = scheme.primaryContainer
+    val arc = scheme.primary
+    val arcEnd = scheme.tertiary
+    Box(Modifier.size(128.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.matchParentSize()) {
+            val stroke = 12.dp.toPx()
+            val inset = stroke / 2
+            val arcSize = Size(size.width - stroke, size.height - stroke)
+            drawArc(track, -90f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))
+            if (progress > 0f) {
+                drawArc(
+                    brush = Brush.sweepGradient(listOf(arc, arcEnd, arc)),
+                    startAngle = -90f,
+                    sweepAngle = 360f * progress,
+                    useCenter = false,
+                    topLeft = Offset(inset, inset),
+                    size = arcSize,
+                    style = Stroke(stroke, cap = StrokeCap.Round)
+                )
+            }
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = day?.toString() ?: "—",
+                style = MaterialTheme.typography.displaySmall,
+                color = scheme.onSurface
+            )
+            Text(
+                text = "день цикла",
+                style = MaterialTheme.typography.labelMedium,
+                color = scheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
 private fun EmptyStateCard(onLogToday: () -> Unit) {
-    Card {
+    AppCard {
         Column(
             Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -436,8 +491,8 @@ private fun EmptyStateCard(onLogToday: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(16.dp))
-            Button(onClick = onLogToday) {
-                Text("Отметить сегодня")
+            AppButton(onClick = onLogToday, icon = Icons.Filled.WaterDrop) {
+                Text("Месячные начались сегодня")
             }
         }
     }
@@ -450,7 +505,7 @@ private fun InfoCard(
     subtitle: String,
     modifier: Modifier = Modifier
 ) {
-    Card(modifier = modifier) {
+    AppCard(modifier = modifier) {
         Column(Modifier.padding(16.dp)) {
             Text(
                 text = title,

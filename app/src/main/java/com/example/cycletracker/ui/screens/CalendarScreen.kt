@@ -35,6 +35,7 @@ import com.example.cycletracker.ui.components.CalendarMonth
 import com.example.cycletracker.util.monthTitle
 import java.time.LocalDate
 import java.time.YearMonth
+import com.example.cycletracker.ui.components.AppCard
 
 @Composable
 fun CalendarScreen(
@@ -72,7 +73,7 @@ fun CalendarScreen(
                 Icon(Icons.Filled.ChevronRight, contentDescription = "Следующий месяц")
             }
         }
-        Card {
+        AppCard {
             Column(Modifier.padding(16.dp)) {
                 CalendarMonth(
                     month = shownMonth,

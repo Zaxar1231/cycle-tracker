@@ -40,6 +40,7 @@ import com.example.cycletracker.logic.PillSchedule
 import com.example.cycletracker.logic.pregnancyProbability
 import com.example.cycletracker.util.formatFull
 import java.time.LocalDate
+import com.example.cycletracker.ui.components.AppButton
 
 val MOODS = listOf(
     "😊" to "Радостное",
@@ -262,7 +263,7 @@ fun DayDetailDialog(
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                Button(onClick = onOpenDiary, modifier = Modifier.fillMaxWidth()) {
+                AppButton(onClick = onOpenDiary, modifier = Modifier.fillMaxWidth()) {
                     Text("Открыть дневник")
                 }
             }
