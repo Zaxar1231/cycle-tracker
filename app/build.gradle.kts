@@ -23,23 +23,32 @@ android {
         buildConfigField("String", "UPDATE_REPO", "\"zaxar1231/cycle-tracker\"")
     }
 
-    // Подпись релиза для CI: ключ передаётся через переменные окружения (секреты GitHub).
-    // Для обновления поверх установленной версии ключ должен быть тем же, что и у прошлых релизов.
+    // Все сборки (Android Studio, CI, debug и release) подписываются одним ключом из signing/release.p12,
+    // поэтому любая новая версия ставится поверх старой. Ключ лежит в репозитории открыто — так решил
+    // владелец, чтобы не настраивать секреты. Свой ключ можно подставить через переменные окружения.
     val keystoreFile = System.getenv("RELEASE_KEYSTORE_FILE")
     signingConfigs {
-        if (keystoreFile != null) {
-            create("release") {
+        create("shared") {
+            if (keystoreFile != null) {
                 storeFile = file(keystoreFile)
                 storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("RELEASE_KEY_ALIAS")
                 keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+            } else {
+                storeFile = rootProject.file("signing/release.p12")
+                storePassword = "cycletracker"
+                keyAlias = "cycletracker"
+                keyPassword = "cycletracker"
             }
         }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("shared")
+        }
         release {
-            if (keystoreFile != null) signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("shared")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
