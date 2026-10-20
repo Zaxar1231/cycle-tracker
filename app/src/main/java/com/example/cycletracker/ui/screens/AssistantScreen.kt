@@ -32,6 +32,7 @@ import com.example.cycletracker.data.SettingsState
 import com.example.cycletracker.logic.ASSISTANT_QA
 import com.example.cycletracker.logic.PETS
 import com.example.cycletracker.logic.PET_EMOJI
+import com.example.cycletracker.ui.components.AppCard
 
 @Composable
 fun AssistantScreen(
@@ -49,7 +50,7 @@ fun AssistantScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Card(modifier = Modifier.padding(16.dp)) {
+        AppCard(modifier = Modifier.padding(16.dp)) {
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -99,7 +100,7 @@ fun AssistantScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filtered) { (question, answer) ->
-                Card {
+                AppCard {
                     Column(Modifier.padding(14.dp)) {
                         Text("$petEmoji $question", style = MaterialTheme.typography.titleSmall)
                         Spacer(Modifier.height(4.dp))

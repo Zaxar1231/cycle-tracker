@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -41,6 +42,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import kotlin.math.roundToInt
+import com.example.cycletracker.ui.components.AppButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +71,7 @@ fun OnboardingScreen(vm: CycleViewModel, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .safeDrawingPadding()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -95,7 +98,7 @@ fun OnboardingScreen(vm: CycleViewModel, modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Button(onClick = { showDatePicker = true }) {
+        AppButton(onClick = { showDatePicker = true }) {
             Text("Дата рождения: ${birthDate?.formatFull() ?: "не указана"}")
         }
 
@@ -146,7 +149,7 @@ fun OnboardingScreen(vm: CycleViewModel, modifier: Modifier = Modifier) {
             }
         }
 
-        Button(
+        AppButton(
             onClick = {
                 vm.completeOnboarding(
                     name = name.trim(),

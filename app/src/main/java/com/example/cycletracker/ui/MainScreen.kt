@@ -3,7 +3,7 @@ package com.example.cycletracker.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Insights
@@ -11,7 +11,8 @@ import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -21,6 +22,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import com.example.cycletracker.CycleViewModel
 import com.example.cycletracker.ui.components.UpdateDialog
 import com.example.cycletracker.ui.screens.AssistantScreen
@@ -83,10 +86,19 @@ fun MainScreen(viewModel: CycleViewModel) {
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            CenterAlignedTopAppBar(title = { Text(tabs[selectedTab].title) })
+            CenterAlignedTopAppBar(
+                title = { Text(tabs[selectedTab].title, style = MaterialTheme.typography.titleLarge) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                )
+            )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.92f),
+                tonalElevation = 0.dp
+            ) {
                 tabs.forEachIndexed { index, tab ->
                     NavigationBarItem(
                         selected = selectedTab == index,
@@ -100,9 +112,14 @@ fun MainScreen(viewModel: CycleViewModel) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (selectedTab == 0 && !info.periods.contains(info.today) && !settings.isPregnant) {
-                FloatingActionButton(onClick = { logPeriod(info.today, showUndo = true) }) {
-                    Icon(Icons.Filled.Add, contentDescription = "Отметить месячные")
-                }
+                ExtendedFloatingActionButton(
+                    onClick = { logPeriod(info.today, showUndo = true) },
+                    icon = { Icon(Icons.Filled.WaterDrop, contentDescription = null) },
+                    text = { Text("Месячные начались") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = MaterialTheme.shapes.large
+                )
             }
         }
     ) { padding ->

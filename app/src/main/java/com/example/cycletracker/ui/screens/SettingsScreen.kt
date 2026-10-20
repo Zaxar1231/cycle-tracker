@@ -1,6 +1,30 @@
 package com.example.cycletracker.ui.screens
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.sp
+import com.example.cycletracker.ui.BACKGROUND_PHOTO
+import com.example.cycletracker.ui.BACKGROUND_PLAIN
+import com.example.cycletracker.ui.BACKGROUND_PRESETS
+import com.example.cycletracker.ui.BACKGROUND_THEME
+import com.example.cycletracker.ui.GradientBackground
+import com.example.cycletracker.ui.backgroundPresetFor
+import com.example.cycletracker.ui.decodeScaled
+import com.example.cycletracker.ui.components.AppTonalButton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -27,6 +51,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChildFriendly
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -57,6 +92,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -77,12 +113,17 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import kotlin.math.roundToInt
+import com.example.cycletracker.ui.components.AppCard
+import com.example.cycletracker.ui.components.IconBadge
+import com.example.cycletracker.ui.components.AppButton
+import com.example.cycletracker.ui.components.AppOutlinedButton
 
 @Composable
 fun SettingsScreen(vm: CycleViewModel, modifier: Modifier = Modifier) {
     val settings by vm.settings.collectAsState()
     val cycle by vm.cycle.collectAsState()
     var page by rememberSaveable { mutableStateOf("main") }
+    BackHandler(enabled = page != "main") { page = "main" }
     when (page) {
         "appearance" -> AppearancePage(settings, vm, onBack = { page = "main" })
         "profile" -> ProfilePage(settings, vm, onBack = { page = "main" })
@@ -115,72 +156,78 @@ private fun MainSettingsPage(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        SettingSlider(
-            title = "Длина цикла",
-            description = "Сколько дней проходит от первых суток одних месячных до первых суток следующих. Обычно 21–35 дней.",
-            value = cycleLen,
-            valueRange = 20f..45f,
-            steps = 24,
-            suffix = "дн.",
-            onValueChange = { cycleLen = it },
-            onCommit = vm::setCycleLength
-        )
-        SettingSlider(
-            title = "Длительность месячных",
-            description = "Сколько дней длятся месячные. Обычно 3–7 дней.",
-            value = periodLen,
-            valueRange = 2f..10f,
-            steps = 7,
-            suffix = "дн.",
-            onValueChange = { periodLen = it },
-            onCommit = vm::setPeriodLength
-        )
-        SettingSlider(
-            title = "Фаза после овуляции",
-            description = "Дни от овуляции до следующих месячных. Обычно 14 дней.",
-            value = luteal,
-            valueRange = 10f..16f,
-            steps = 5,
-            suffix = "дн.",
-            onValueChange = { luteal = it },
-            onCommit = vm::setLutealLength
-        )
-        SettingSlider(
-            title = "Фертильные дни",
-            description = "Сколько дней до овуляции считается фертильным окном.",
-            value = fertile,
-            valueRange = 3f..8f,
-            steps = 4,
-            suffix = "дн.",
-            onValueChange = { fertile = it },
-            onCommit = vm::setFertileDays
-        )
-
-        Card {
-            Column(Modifier.padding(vertical = 4.dp, horizontal = 16.dp)) {
-                SettingsRow("Внешний вид", "Тема, фон, иконка приложения") { onNavigate("appearance") }
-                HorizontalDivider()
-                SettingsRow("Профиль и данные", "Имя, вес, рост, экспорт и отчёт") { onNavigate("profile") }
-                HorizontalDivider()
-                SettingsRow("Режим беременности", "Расчёт срока и даты родов") { onNavigate("pregnancy") }
-                HorizontalDivider()
-                SettingsRow("Контрацептивы (таблетки)", "График приёма и напоминания") { onNavigate("pill") }
-                HorizontalDivider()
-                SettingsRow("Напоминания", "Вода, здоровье, фертильность") { onNavigate("reminders") }
-                HorizontalDivider()
-                SettingsRow("Безопасность", "PIN-код для входа") { onNavigate("security") }
-                HorizontalDivider()
-                SettingsRow("Обновления", "Версия ${Updater.currentVersion}, проверка новых версий") { onNavigate("updates") }
+        AppCard {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Параметры цикла", style = MaterialTheme.typography.titleMedium)
+                SettingSlider(
+                    title = "Длина цикла",
+                    description = "Сколько дней проходит от первых суток одних месячных до первых суток следующих. Обычно 21–35 дней.",
+                    value = cycleLen,
+                    valueRange = 20f..45f,
+                    steps = 24,
+                    suffix = "дн.",
+                    onValueChange = { cycleLen = it },
+                    onCommit = vm::setCycleLength
+                )
+                SettingSlider(
+                    title = "Длительность месячных",
+                    description = "Сколько дней длятся месячные. Обычно 3–7 дней.",
+                    value = periodLen,
+                    valueRange = 2f..10f,
+                    steps = 7,
+                    suffix = "дн.",
+                    onValueChange = { periodLen = it },
+                    onCommit = vm::setPeriodLength
+                )
+                SettingSlider(
+                    title = "Фаза после овуляции",
+                    description = "Дни от овуляции до следующих месячных. Обычно 14 дней.",
+                    value = luteal,
+                    valueRange = 10f..16f,
+                    steps = 5,
+                    suffix = "дн.",
+                    onValueChange = { luteal = it },
+                    onCommit = vm::setLutealLength
+                )
+                SettingSlider(
+                    title = "Фертильные дни",
+                    description = "Сколько дней до овуляции считается фертильным окном.",
+                    value = fertile,
+                    valueRange = 3f..8f,
+                    steps = 4,
+                    suffix = "дн.",
+                    onValueChange = { fertile = it },
+                    onCommit = vm::setFertileDays
+                )
             }
         }
 
-        HorizontalDivider()
+        AppCard {
+            Column(Modifier.padding(vertical = 4.dp, horizontal = 12.dp)) {
+                SettingsRow(Icons.Filled.Palette, "Внешний вид", "Тема, фон, иконка приложения") { onNavigate("appearance") }
+                HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                SettingsRow(Icons.Filled.Person, "Профиль и данные", "Имя, вес, рост, экспорт и отчёт") { onNavigate("profile") }
+                HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                SettingsRow(Icons.Filled.ChildFriendly, "Режим беременности", "Расчёт срока и даты родов") { onNavigate("pregnancy") }
+                HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                SettingsRow(Icons.Filled.Medication, "Контрацептивы (таблетки)", "График приёма и напоминания") { onNavigate("pill") }
+                HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                SettingsRow(Icons.Filled.Notifications, "Напоминания", "Вода, здоровье, фертильность") { onNavigate("reminders") }
+                HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                SettingsRow(Icons.Filled.Lock, "Безопасность", "PIN-код для входа") { onNavigate("security") }
+                HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                SettingsRow(Icons.Filled.SystemUpdate, "Обновления", "Версия ${Updater.currentVersion}, проверка новых версий") { onNavigate("updates") }
+            }
+        }
+
         Text("Данные", style = MaterialTheme.typography.titleMedium)
-        OutlinedButton(
+        AppOutlinedButton(
             onClick = { showResetDialog = true },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Filled.DeleteForever,
+            danger = true
         ) {
-            Text("Удалить все данные", color = MaterialTheme.colorScheme.error)
+            Text("Удалить все данные")
         }
         Spacer(Modifier.height(16.dp))
     }
@@ -208,14 +255,17 @@ private fun MainSettingsPage(
 }
 
 @Composable
-private fun SettingsRow(title: String, subtitle: String, onClick: () -> Unit) {
+private fun SettingsRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = 12.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        IconBadge(icon)
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleSmall)
             Text(
@@ -258,9 +308,13 @@ private fun AppearancePage(settings: SettingsState, vm: CycleViewModel, onBack: 
                     uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
             }
-            vm.setBackgroundUri(uri.toString())
+            vm.setBackgroundPhoto(uri.toString())
         }
     }
+    val launchPicker = {
+        pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+    var dim by remember(settings.backgroundDim) { mutableFloatStateOf(settings.backgroundDim.toFloat()) }
 
     Column(
         modifier = Modifier
@@ -271,109 +325,301 @@ private fun AppearancePage(settings: SettingsState, vm: CycleViewModel, onBack: 
     ) {
         PageHeader("Внешний вид", onBack)
 
-        Text("Цветовая тема", style = MaterialTheme.typography.titleMedium)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            THEME_OPTIONS.forEach { (key, label) ->
-                val selected = settings.themeScheme == key
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(
-                            if (selected) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surfaceVariant
-                        )
-                        .border(
-                            1.dp,
-                            if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
-                            RoundedCornerShape(24.dp)
-                        )
-                        .clickable { vm.setThemeScheme(key) }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+        AppCard {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Цветовая тема", style = MaterialTheme.typography.titleMedium)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    maxItemsInEachRow = 3
                 ) {
-                    Box(
-                        Modifier
-                            .size(16.dp)
-                            .clip(CircleShape)
-                            .background(schemePreviewColor(key))
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(label, style = MaterialTheme.typography.labelMedium)
+                    THEME_OPTIONS.forEach { (key, label) ->
+                        ThemeSwatch(
+                            color = schemePreviewColor(key),
+                            label = label,
+                            selected = settings.themeScheme == key,
+                            onClick = { vm.setThemeScheme(key) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
 
-        Text("Фон приложения", style = MaterialTheme.typography.titleMedium)
-        Button(
-            onClick = {
-                pickImage.launch(
-                    androidx.activity.result.PickVisualMediaRequest(
-                        ActivityResultContracts.PickVisualMedia.ImageOnly
+        AppCard {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Фон приложения", style = MaterialTheme.typography.titleMedium)
+                val tiles = buildList {
+                    add(BACKGROUND_THEME to "Под тему")
+                    BACKGROUND_PRESETS.forEach { add(it.key to it.label) }
+                    add(BACKGROUND_PLAIN to "Без фона")
+                    add(BACKGROUND_PHOTO to "Своё фото")
+                }
+                tiles.chunked(3).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        row.forEach { (key, label) ->
+                            BackgroundTile(
+                                key = key,
+                                label = label,
+                                photoUri = settings.backgroundUri,
+                                selected = settings.backgroundStyle == key,
+                                onClick = {
+                                    if (key == BACKGROUND_PHOTO && settings.backgroundUri == null) launchPicker()
+                                    else vm.setBackgroundStyle(key)
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+
+                if (settings.backgroundStyle == BACKGROUND_PHOTO && settings.backgroundUri != null) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    SettingSlider(
+                        title = "Осветление фото",
+                        description = "Чем больше, тем спокойнее фон и легче читать текст.",
+                        value = dim,
+                        valueRange = 0f..80f,
+                        steps = 15,
+                        suffix = "%",
+                        onValueChange = { dim = it },
+                        onCommit = vm::setBackgroundDim
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Размыть фото", style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                text = if (Build.VERSION.SDK_INT >= 31) "Мягкий фон без отвлекающих деталей"
+                                else "Доступно на Android 12 и новее",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.backgroundBlur,
+                            onCheckedChange = vm::setBackgroundBlur,
+                            enabled = Build.VERSION.SDK_INT >= 31
+                        )
+                    }
+                    AppTonalButton(
+                        onClick = launchPicker,
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = Icons.Filled.Image
+                    ) {
+                        Text("Выбрать другое фото")
+                    }
+                }
+            }
+        }
+
+        AppCard {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Иконка приложения", style = MaterialTheme.typography.titleMedium)
+                val iconVariants = listOf(
+                    "rose" to "Розовая",
+                    "lavender" to "Лавандовая",
+                    "teal" to "Бирюзовая",
+                    "peach" to "Персиковая"
+                )
+                val iconColors = mapOf(
+                    "rose" to Color(0xFFF48FB1),
+                    "lavender" to Color(0xFFB39DDB),
+                    "teal" to Color(0xFF80CBC4),
+                    "peach" to Color(0xFFFFAB91)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    iconVariants.forEach { (key, label) ->
+                        val selected = settings.iconVariant == key
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clip(MaterialTheme.shapes.medium)
+                                .clickable { vm.setIconVariant(key) }
+                                .padding(6.dp)
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(iconColors[key] ?: Color.Gray)
+                                    .border(
+                                        width = if (selected) 3.dp else 0.dp,
+                                        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                        shape = RoundedCornerShape(18.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("💧", fontSize = 24.sp)
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (selected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = "Android не разрешает ставить своё фото как иконку. Ярлык на рабочем столе обновится в течение минуты.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        ) {
-            Text("Выбрать фото из галереи")
         }
-        if (settings.backgroundUri != null) {
-            OutlinedButton(onClick = { vm.setBackgroundUri(null) }) {
-                Text("Убрать фон")
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun ThemeSwatch(
+    color: Color,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .border(
+                    width = 3.dp,
+                    color = if (selected) color else Color.Transparent,
+                    shape = CircleShape
+                )
+                .padding(5.dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(lerp(color, Color.White, 0.35f), color))),
+            contentAlignment = Alignment.Center
+        ) {
+            if (selected) {
+                Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
             }
         }
-
-        Text("Иконка приложения", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(6.dp))
         Text(
-            text = "Android не разрешает ставить своё фото как иконку — выберите один из готовых вариантов.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         )
-        val iconVariants = listOf(
-            "rose" to "Розовая",
-            "lavender" to "Лавандовая",
-            "teal" to "Бирюзовая",
-            "peach" to "Персиковая"
-        )
-        val iconColors = mapOf(
-            "rose" to androidx.compose.ui.graphics.Color(0xFFF48FB1),
-            "lavender" to androidx.compose.ui.graphics.Color(0xFFB39DDB),
-            "teal" to androidx.compose.ui.graphics.Color(0xFF80CBC4),
-            "peach" to androidx.compose.ui.graphics.Color(0xFFFFAB91)
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            iconVariants.forEach { (key, label) ->
+    }
+}
+
+@Composable
+private fun BackgroundTile(
+    key: String,
+    label: String,
+    photoUri: String?,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val shape = RoundedCornerShape(18.dp)
+    val scheme = MaterialTheme.colorScheme
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.72f)
+                .clip(shape)
+                .background(scheme.background)
+                .border(
+                    width = if (selected) 3.dp else 1.dp,
+                    color = if (selected) scheme.primary else scheme.outlineVariant,
+                    shape = shape
+                )
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            when (key) {
+                BACKGROUND_PLAIN -> Unit
+                BACKGROUND_PHOTO -> {
+                    val thumb by produceState<ImageBitmap?>(null, photoUri) {
+                        value = photoUri?.let { uri ->
+                            withContext(Dispatchers.IO) { decodeScaled(context, Uri.parse(uri), maxSide = 360) }
+                        }
+                    }
+                    val image = thumb
+                    if (image != null) {
+                        Image(
+                            bitmap = image,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.matchParentSize()
+                        )
+                    } else {
+                        Icon(
+                            Icons.Filled.AddPhotoAlternate,
+                            contentDescription = null,
+                            tint = scheme.primary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+                else -> GradientBackground(backgroundPresetFor(key), Modifier.matchParentSize())
+            }
+            // Мини-«карточки», чтобы было видно, как фон смотрится под содержимым.
+            if (key != BACKGROUND_PHOTO || photoUri != null) {
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { vm.setIconVariant(key) }
-                        .padding(8.dp)
+                        .matchParentSize()
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom)
                 ) {
                     Box(
                         Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(iconColors[key] ?: androidx.compose.ui.graphics.Color.Gray)
-                            .then(
-                                if (settings.iconVariant == key)
-                                    Modifier.border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
-                                else Modifier
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("💧")
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text(label, style = MaterialTheme.typography.labelSmall)
+                            .fillMaxWidth()
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(scheme.surfaceContainerLow.copy(alpha = 0.9f))
+                    )
+                    Box(
+                        Modifier
+                            .fillMaxWidth(0.7f)
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(scheme.surfaceContainerLow.copy(alpha = 0.9f))
+                    )
+                }
+            }
+            if (selected) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(scheme.primary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.Check, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(16.dp))
                 }
             }
         }
+        Spacer(Modifier.height(6.dp))
         Text(
-            text = "После смены иконки ярлык на рабочем столе обновится в течение минуты.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (selected) scheme.primary else scheme.onSurfaceVariant,
+            maxLines = 1
         )
-        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -412,7 +658,7 @@ private fun ProfilePage(settings: SettingsState, vm: CycleViewModel, onBack: () 
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-        Button(onClick = { showDatePicker = true }) {
+        AppButton(onClick = { showDatePicker = true }) {
             Text("Дата рождения: ${birthDate?.formatFull() ?: "не указана"}")
         }
         OutlinedTextField(
@@ -431,7 +677,7 @@ private fun ProfilePage(settings: SettingsState, vm: CycleViewModel, onBack: () 
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-        Button(
+        AppButton(
             onClick = {
                 vm.updateProfile(
                     name = name.trim(),
@@ -447,19 +693,19 @@ private fun ProfilePage(settings: SettingsState, vm: CycleViewModel, onBack: () 
 
         HorizontalDivider()
         Text("Данные и отчёты", style = MaterialTheme.typography.titleMedium)
-        Button(
+        AppButton(
             onClick = { shareText(context, vm.exportJson()) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Экспорт данных (файл JSON)")
         }
-        OutlinedButton(
+        AppOutlinedButton(
             onClick = { importLauncher.launch(arrayOf("text/*", "application/json")) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Импорт из файла")
         }
-        Button(
+        AppButton(
             onClick = { shareFile(context, vm.writeReportFile()) },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -537,12 +783,12 @@ private fun PregnancyPage(settings: SettingsState, vm: CycleViewModel, onBack: (
         }
 
         if (settings.isPregnant) {
-            Button(onClick = { showDatePicker = true }) {
+            AppButton(onClick = { showDatePicker = true }) {
                 Text("Первый день последних месячных: ${lmp?.formatFull() ?: "не указан"}")
             }
             lmp?.let {
                 val p = PregnancyInfo(it, LocalDate.now())
-                Card {
+                AppCard {
                     Column(Modifier.padding(16.dp)) {
                         Text("Неделя ${p.weeks + 1}, день ${p.daysIntoWeek + 1}", style = MaterialTheme.typography.headlineSmall)
                         Spacer(Modifier.height(4.dp))
@@ -615,7 +861,7 @@ private fun PillPage(settings: SettingsState, vm: CycleViewModel, onBack: () -> 
     ) {
         PageHeader("Контрацептивы (таблетки)", onBack)
 
-        Card {
+        AppCard {
             Column(Modifier.padding(16.dp)) {
                 Text("💊 Правила приёма", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
@@ -641,7 +887,7 @@ private fun PillPage(settings: SettingsState, vm: CycleViewModel, onBack: () -> 
             )
         }
 
-        Button(onClick = { showDatePicker = true }) {
+        AppButton(onClick = { showDatePicker = true }) {
             Text("День первой таблетки: ${startDate?.formatShort() ?: "не указан"}")
         }
 
@@ -705,7 +951,7 @@ private fun PillPage(settings: SettingsState, vm: CycleViewModel, onBack: () -> 
                     pillMealRule = mealRule
                 )
             )
-            Card {
+            AppCard {
                 Column(Modifier.padding(16.dp)) {
                     Text("Сегодня", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(schedule.statusOn(LocalDate.now()), style = MaterialTheme.typography.bodyMedium)
@@ -713,7 +959,7 @@ private fun PillPage(settings: SettingsState, vm: CycleViewModel, onBack: () -> 
             }
         }
 
-        Button(
+        AppButton(
             onClick = {
                 vm.setPill(enabled, startDate, activeDays.roundToInt(), breakDays.roundToInt(), hour.roundToInt(), minute.roundToInt(), mealRule)
             },
@@ -801,7 +1047,7 @@ private fun RemindersPage(settings: SettingsState, vm: CycleViewModel, onBack: (
     ) {
         PageHeader("Напоминания", onBack)
 
-        Card {
+        AppCard {
             Column(Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -813,7 +1059,7 @@ private fun RemindersPage(settings: SettingsState, vm: CycleViewModel, onBack: (
                 SettingSlider("Начало", "", waterStart, 6f..12f, 5, "ч", { waterStart = it }, {})
                 SettingSlider("Конец", "", waterEnd, 13f..23f, 9, "ч", { waterEnd = it }, {})
                 SettingSlider("Каждые N часов", "", waterInterval, 1f..4f, 2, "ч", { waterInterval = it }, {})
-                Button(
+                AppButton(
                     onClick = {
                         vm.setWaterReminder(waterEnabled, waterStart.roundToInt(), waterEnd.roundToInt(), waterInterval.roundToInt())
                     },
@@ -824,7 +1070,7 @@ private fun RemindersPage(settings: SettingsState, vm: CycleViewModel, onBack: (
             }
         }
 
-        Card {
+        AppCard {
             Column(Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -840,7 +1086,7 @@ private fun RemindersPage(settings: SettingsState, vm: CycleViewModel, onBack: (
                 )
                 SettingSlider("Час", "", healthHour, 0f..23f, 22, "ч", { healthHour = it }, {})
                 SettingSlider("Минуты", "", healthMinute, 0f..59f, 58, "мин", { healthMinute = it }, {})
-                Button(
+                AppButton(
                     onClick = { vm.setHealthReminder(healthEnabled, healthHour.roundToInt(), healthMinute.roundToInt()) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -849,7 +1095,7 @@ private fun RemindersPage(settings: SettingsState, vm: CycleViewModel, onBack: (
             }
         }
 
-        Card {
+        AppCard {
             Column(Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -893,18 +1139,20 @@ private fun SecurityPage(settings: SettingsState, vm: CycleViewModel, onBack: ()
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Button(
+        AppButton(
             onClick = { showPinSetup = true },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(if (settings.pinEnabled) "Изменить PIN" else "Установить PIN")
         }
         if (settings.pinEnabled) {
-            OutlinedButton(
+            AppOutlinedButton(
                 onClick = { vm.disablePin() },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Filled.LockOpen,
+                danger = true
             ) {
-                Text("Отключить PIN", color = MaterialTheme.colorScheme.error)
+                Text("Отключить PIN")
             }
         }
         Spacer(Modifier.height(16.dp))
@@ -935,7 +1183,7 @@ private fun UpdatesPage(settings: SettingsState, vm: CycleViewModel, onBack: () 
     ) {
         PageHeader("Обновления", onBack)
 
-        Card {
+        AppCard {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -963,22 +1211,22 @@ private fun UpdatesPage(settings: SettingsState, vm: CycleViewModel, onBack: () 
                     )
                 }
                 when (status) {
-                    is UpdateStatus.Available -> Button(
+                    is UpdateStatus.Available -> AppButton(
                         onClick = { vm.downloadUpdate(status.release) },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Скачать и установить") }
 
-                    is UpdateStatus.Downloading -> OutlinedButton(
+                    is UpdateStatus.Downloading -> AppOutlinedButton(
                         onClick = vm::cancelDownload,
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Отменить загрузку") }
 
-                    is UpdateStatus.ReadyToInstall -> Button(
+                    is UpdateStatus.ReadyToInstall -> AppButton(
                         onClick = vm::installUpdate,
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Установить") }
 
-                    else -> Button(
+                    else -> AppButton(
                         onClick = { vm.checkForUpdates(manual = true) },
                         enabled = status != UpdateStatus.Checking,
                         modifier = Modifier.fillMaxWidth()
@@ -991,7 +1239,7 @@ private fun UpdatesPage(settings: SettingsState, vm: CycleViewModel, onBack: () 
                 }
                 if (release != null) {
                     if (status is UpdateStatus.Available) {
-                        OutlinedButton(
+                        AppOutlinedButton(
                             onClick = vm::showUpdateDialog,
                             modifier = Modifier.fillMaxWidth()
                         ) { Text("Что нового") }
@@ -1004,7 +1252,7 @@ private fun UpdatesPage(settings: SettingsState, vm: CycleViewModel, onBack: () 
             }
         }
 
-        Card {
+        AppCard {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1104,13 +1352,17 @@ private fun SettingSlider(
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             Text(
                 text = "${value.roundToInt()} $suffix",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
             )
         }
         if (description.isNotEmpty()) {

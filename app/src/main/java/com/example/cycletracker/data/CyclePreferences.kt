@@ -65,6 +65,26 @@ class CyclePreferences(context: Context) {
         prefs.edit().putString(KEY_BG, uri).apply()
     }
 
+    /** Раньше был только выбор фото: если фото уже выбрано, оставляем его. */
+    fun loadBackgroundStyle(): String =
+        prefs.getString(KEY_BG_STYLE, null) ?: if (loadBackgroundUri() != null) "photo" else "theme"
+
+    fun saveBackgroundStyle(value: String) {
+        prefs.edit().putString(KEY_BG_STYLE, value).apply()
+    }
+
+    fun loadBackgroundDim(): Int = prefs.getInt(KEY_BG_DIM, 35)
+
+    fun saveBackgroundDim(value: Int) {
+        prefs.edit().putInt(KEY_BG_DIM, value).apply()
+    }
+
+    fun loadBackgroundBlur(): Boolean = prefs.getBoolean(KEY_BG_BLUR, false)
+
+    fun saveBackgroundBlur(value: Boolean) {
+        prefs.edit().putBoolean(KEY_BG_BLUR, value).apply()
+    }
+
     fun isPinEnabled(): Boolean = prefs.getBoolean(KEY_PIN_ON, false)
 
     fun savePinEnabled(value: Boolean) {
@@ -277,6 +297,9 @@ class CyclePreferences(context: Context) {
         themeScheme = loadThemeScheme(),
         iconVariant = loadIconVariant(),
         backgroundUri = loadBackgroundUri(),
+        backgroundStyle = loadBackgroundStyle(),
+        backgroundDim = loadBackgroundDim(),
+        backgroundBlur = loadBackgroundBlur(),
         pinEnabled = isPinEnabled(),
         fertileDays = loadFertileDays(),
         profileName = loadProfileName(),
@@ -397,6 +420,9 @@ class CyclePreferences(context: Context) {
         private const val KEY_THEME = "theme_scheme"
         private const val KEY_ICON = "icon_variant"
         private const val KEY_BG = "background_uri"
+        private const val KEY_BG_STYLE = "background_style"
+        private const val KEY_BG_DIM = "background_dim"
+        private const val KEY_BG_BLUR = "background_blur"
         private const val KEY_PIN_ON = "pin_enabled"
         private const val KEY_PIN = "pin_hash"
         private const val KEY_ONBOARD = "onboarding_done"

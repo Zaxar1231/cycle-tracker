@@ -33,6 +33,7 @@ import com.example.cycletracker.ui.components.CycleBarChart
 import com.example.cycletracker.ui.components.HormoneCurveChart
 import com.example.cycletracker.util.formatShort
 import java.time.LocalDate
+import com.example.cycletracker.ui.components.AppCard
 
 @Composable
 fun StatsScreen(
@@ -49,7 +50,7 @@ fun StatsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         if (info.periods.isEmpty() && logs.isEmpty()) {
-            Card {
+            AppCard {
                 Column(
                     Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -128,7 +129,7 @@ fun StatsScreen(
 
 @Composable
 private fun ChartCard(title: String, content: @Composable () -> Unit) {
-    Card {
+    AppCard {
         Column(Modifier.padding(16.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
@@ -148,7 +149,7 @@ private fun SymptomStatsCard(logs: Map<LocalDate, DailyLog>) {
     val sexDays = logs.values.count { it.sex }
     if (counters.isEmpty() && sexDays == 0) return
 
-    Card {
+    AppCard {
         Column(Modifier.padding(16.dp)) {
             Text("Как часто отмечались симптомы", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
@@ -217,7 +218,7 @@ private fun plural(n: Int): String {
 
 @Composable
 private fun StatCard(title: String, value: String, note: String, modifier: Modifier = Modifier) {
-    Card(modifier = modifier) {
+    AppCard(modifier = modifier) {
         Column(Modifier.padding(16.dp)) {
             Text(
                 text = title,
@@ -242,7 +243,7 @@ private fun StatCard(title: String, value: String, note: String, modifier: Modif
 
 @Composable
 private fun HistoryCard(info: CycleInfo) {
-    Card {
+    AppCard {
         Column(Modifier.padding(16.dp)) {
             Text("История циклов", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))

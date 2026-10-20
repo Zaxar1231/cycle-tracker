@@ -147,8 +147,24 @@ class CycleViewModel(application: Application) : AndroidViewModel(application) {
         refreshSettings()
     }
 
-    fun setBackgroundUri(uri: String?) {
+    fun setBackgroundPhoto(uri: String) {
         prefs.saveBackgroundUri(uri)
+        prefs.saveBackgroundStyle("photo")
+        refreshSettings()
+    }
+
+    fun setBackgroundStyle(style: String) {
+        prefs.saveBackgroundStyle(style)
+        refreshSettings()
+    }
+
+    fun setBackgroundDim(value: Int) {
+        prefs.saveBackgroundDim(value)
+        refreshSettings()
+    }
+
+    fun setBackgroundBlur(value: Boolean) {
+        prefs.saveBackgroundBlur(value)
         refreshSettings()
     }
 
