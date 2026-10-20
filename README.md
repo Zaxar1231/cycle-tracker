@@ -46,12 +46,12 @@ Android ставит обновление только поверх прилож
 
 ### Автоматический выпуск через GitHub Actions
 1. Один раз добавьте секреты в Settings → Secrets and variables → Actions:
-   - `RELEASE_KEYSTORE_BASE64` — файл keystore в base64 (`base64 -w0 my-release.jks`; в Windows: `certutil -encode my-release.jks out.txt`, взять содержимое без строк BEGIN/END)
+   - `RELEASE_KEYSTORE_BASE64` — файл keystore в base64 (Windows PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\путь\ключ.jks")) | Set-Clipboard`; Mac: `base64 -i ключ.jks | pbcopy`; Linux: `base64 -w0 ключ.jks`)
    - `RELEASE_KEYSTORE_PASSWORD` — пароль keystore
    - `RELEASE_KEY_ALIAS` — алиас ключа
    - `RELEASE_KEY_PASSWORD` — пароль ключа
-2. Создайте и запушьте тег: `git tag v1.2 && git push origin v1.2`.
-3. Workflow «Release» соберёт подписанный APK с версией `1.2` и опубликует релиз. Приложения у пользователей увидят обновление.
+2. Дальше ничего делать не нужно. Когда в `main` попадает новая версия (значение по умолчанию `appVersionName` в `app/build.gradle.kts`), workflow «Release» сам соберёт подписанный APK, создаст тег `v<версия>` и опубликует релиз. Приложения у пользователей увидят обновление.
+3. Если секретов ещё нет, workflow не падает, а пропускает выпуск с предупреждением. После добавления секретов откройте Actions → Release → **Run workflow**, и текущая версия выйдет.
 
 ### Выпуск вручную
 Соберите подписанный APK (Build → Generate Signed App Bundle / APK) с увеличенной версией (`./gradlew assembleRelease -PappVersion=1.2` или поменяйте значение по умолчанию в `app/build.gradle.kts`). Создайте релиз с тегом `v1.2` и прикрепите `.apk`.
