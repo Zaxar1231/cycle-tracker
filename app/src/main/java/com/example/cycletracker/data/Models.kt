@@ -70,5 +70,6 @@ data class SettingsState(
     val healthMinute: Int = 0,
     val fertilityNotifyEnabled: Boolean = true,
     val onboardingDone: Boolean = false,
-    val pet: String = "cat"
+    val pet: String = "cat",
+    val updateAutoCheck: Boolean = true
 )

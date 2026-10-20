@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.cycletracker.CycleViewModel
+import com.example.cycletracker.ui.components.UpdateDialog
 import com.example.cycletracker.ui.screens.AssistantScreen
 import com.example.cycletracker.ui.screens.CalendarScreen
 import com.example.cycletracker.ui.screens.HomeScreen
@@ -50,6 +51,7 @@ fun MainScreen(viewModel: CycleViewModel) {
     val info by viewModel.cycle.collectAsState()
     val logs by viewModel.logs.collectAsState()
     val settings by viewModel.settings.collectAsState()
+    val update by viewModel.update.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -135,5 +137,17 @@ fun MainScreen(viewModel: CycleViewModel) {
                 4 -> SettingsScreen(vm = viewModel)
             }
         }
+    }
+
+    if (update.showDialog) {
+        UpdateDialog(
+            status = update.status,
+            onDownload = viewModel::downloadUpdate,
+            onInstall = viewModel::installUpdate,
+            onCancelDownload = viewModel::cancelDownload,
+            onSkip = viewModel::skipUpdate,
+            onOpenPage = viewModel::openReleasePage,
+            onDismiss = viewModel::dismissUpdateDialog
+        )
     }
 }

@@ -232,6 +232,24 @@ class CyclePreferences(context: Context) {
         prefs.edit().putString(KEY_IRREGULAR_MONTH, value).apply()
     }
 
+    fun loadUpdateAutoCheck(): Boolean = prefs.getBoolean(KEY_UPDATE_AUTO, true)
+
+    fun saveUpdateAutoCheck(value: Boolean) {
+        prefs.edit().putBoolean(KEY_UPDATE_AUTO, value).apply()
+    }
+
+    fun loadUpdateSkippedVersion(): String = prefs.getString(KEY_UPDATE_SKIPPED, "") ?: ""
+
+    fun saveUpdateSkippedVersion(value: String) {
+        prefs.edit().putString(KEY_UPDATE_SKIPPED, value).apply()
+    }
+
+    fun loadUpdateLastCheck(): Long = prefs.getLong(KEY_UPDATE_LAST_CHECK, 0L)
+
+    fun saveUpdateLastCheck(value: Long) {
+        prefs.edit().putLong(KEY_UPDATE_LAST_CHECK, value).apply()
+    }
+
     fun saveLog(date: LocalDate, log: DailyLog) {
         val all = loadAllLogs().toMutableMap()
         if (log.isEmpty) all.remove(date) else all[date] = log
@@ -283,7 +301,8 @@ class CyclePreferences(context: Context) {
         healthMinute = loadHealthMinute(),
         fertilityNotifyEnabled = loadFertilityNotify(),
         onboardingDone = isOnboardingDone(),
-        pet = loadPet()
+        pet = loadPet(),
+        updateAutoCheck = loadUpdateAutoCheck()
     )
 
     fun exportJson(): String {
@@ -405,6 +424,9 @@ class CyclePreferences(context: Context) {
         private const val KEY_PET = "assistant_pet"
         private const val KEY_IRREGULAR_MONTH = "irregular_notified_month"
         private const val KEY_LOGS = "daily_logs_json"
+        private const val KEY_UPDATE_AUTO = "update_auto_check"
+        private const val KEY_UPDATE_SKIPPED = "update_skipped_version"
+        private const val KEY_UPDATE_LAST_CHECK = "update_last_check"
 
         fun sha256(input: String): String =
             MessageDigest.getInstance("SHA-256")
