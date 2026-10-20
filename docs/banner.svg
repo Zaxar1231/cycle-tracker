@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-label="Мой цикл — трекер менструального цикла для Android">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF1F5"/>
+      <stop offset="1" stop-color="#F3E6FF"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#F7A1C4" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#F7A1C4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#C7B4F5" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#C7B4F5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="arc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9C2550"/>
+      <stop offset="1" stop-color="#C77B4A"/>
+    </linearGradient>
+    <clipPath id="frame"><rect width="1200" height="420" rx="36"/></clipPath>
+  </defs>
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="420" fill="url(#bg)"/>
+    <circle cx="1080" cy="40" r="300" fill="url(#glowA)"/>
+    <circle cx="120" cy="420" r="320" fill="url(#glowB)"/>
+
+    <!-- Кольцо цикла, как на главном экране приложения -->
+    <g transform="translate(250 210)">
+      <circle r="118" fill="#FFFFFF" fill-opacity="0.75"/>
+      <circle r="96" fill="none" stroke="#FFD9E2" stroke-width="20"/>
+      <circle r="96" fill="none" stroke="url(#arc)" stroke-width="20" stroke-linecap="round"
+              stroke-dasharray="301 603" transform="rotate(-90)"/>
+      <text y="14" text-anchor="middle" font-family="Roboto, 'Segoe UI', Arial, sans-serif" font-size="64" font-weight="600" fill="#22191B">14</text>
+      <text y="46" text-anchor="middle" font-family="Roboto, 'Segoe UI', Arial, sans-serif" font-size="20" fill="#514347">день цикла</text>
+    </g>
+
+    <text x="430" y="180" font-family="Roboto, 'Segoe UI', Arial, sans-serif" font-size="76" font-weight="700" fill="#9C2550">Мой цикл</text>
+    <text x="432" y="236" font-family="Roboto, 'Segoe UI', Arial, sans-serif" font-size="30" fill="#22191B">Трекер менструального цикла для Android</text>
+    <text x="432" y="290" font-family="Roboto, 'Segoe UI', Arial, sans-serif" font-size="22" fill="#514347">Прогноз месячных и овуляции · дневник · напоминания</text>
+    <text x="432" y="326" font-family="Roboto, 'Segoe UI', Arial, sans-serif" font-size="22" fill="#514347">Данные хранятся только на телефоне</text>
+  </g>
+</svg>
