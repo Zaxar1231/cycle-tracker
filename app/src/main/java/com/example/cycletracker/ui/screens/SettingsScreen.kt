@@ -36,6 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -60,6 +61,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.cycletracker.CycleViewModel
+import com.example.cycletracker.UpdateStatus
+import com.example.cycletracker.update.Updater
 import com.example.cycletracker.data.SettingsState
 import com.example.cycletracker.logic.CycleInfo
 import com.example.cycletracker.logic.PillSchedule
@@ -87,6 +90,7 @@ fun SettingsScreen(vm: CycleViewModel, modifier: Modifier = Modifier) {
         "pill" -> PillPage(settings, vm, onBack = { page = "main" })
         "reminders" -> RemindersPage(settings, vm, onBack = { page = "main" })
         "security" -> SecurityPage(settings, vm, onBack = { page = "main" })
+        "updates" -> UpdatesPage(settings, vm, onBack = { page = "main" })
         else -> MainSettingsPage(settings, cycle, vm, onNavigate = { page = it })
     }
 }
@@ -165,6 +169,8 @@ private fun MainSettingsPage(
                 SettingsRow("Напоминания", "Вода, здоровье, фертильность") { onNavigate("reminders") }
                 HorizontalDivider()
                 SettingsRow("Безопасность", "PIN-код для входа") { onNavigate("security") }
+                HorizontalDivider()
+                SettingsRow("Обновления", "Версия ${Updater.currentVersion}, проверка новых версий") { onNavigate("updates") }
             }
         }
 
@@ -912,6 +918,122 @@ private fun SecurityPage(settings: SettingsState, vm: CycleViewModel, onBack: ()
             },
             onDismiss = { showPinSetup = false }
         )
+    }
+}
+
+@Composable
+private fun UpdatesPage(settings: SettingsState, vm: CycleViewModel, onBack: () -> Unit) {
+    val update by vm.update.collectAsState()
+    val status = update.status
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        PageHeader("Обновления", onBack)
+
+        Card {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Установлена версия ${Updater.currentVersion}", style = MaterialTheme.typography.titleMedium)
+                val statusText = when (status) {
+                    UpdateStatus.Idle -> "Новые версии берутся из релизов на GitHub."
+                    UpdateStatus.Checking -> "Проверяем…"
+                    UpdateStatus.UpToDate -> "У вас последняя версия ✅"
+                    is UpdateStatus.Available -> "Доступна версия ${status.release.version} 🎉"
+                    is UpdateStatus.Downloading -> "Загрузка версии ${status.release.version}: ${(status.progress * 100).toInt()}%"
+                    is UpdateStatus.ReadyToInstall -> "Версия ${status.release.version} скачана и готова к установке"
+                    is UpdateStatus.Failed -> status.message
+                }
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (status is UpdateStatus.Failed) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (status is UpdateStatus.Downloading) {
+                    LinearProgressIndicator(
+                        progress = { status.progress },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                when (status) {
+                    is UpdateStatus.Available -> Button(
+                        onClick = { vm.downloadUpdate(status.release) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Скачать и установить") }
+
+                    is UpdateStatus.Downloading -> OutlinedButton(
+                        onClick = vm::cancelDownload,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Отменить загрузку") }
+
+                    is UpdateStatus.ReadyToInstall -> Button(
+                        onClick = vm::installUpdate,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Установить") }
+
+                    else -> Button(
+                        onClick = { vm.checkForUpdates(manual = true) },
+                        enabled = status != UpdateStatus.Checking,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Проверить обновления") }
+                }
+                val release = when (status) {
+                    is UpdateStatus.Available -> status.release
+                    is UpdateStatus.Failed -> status.release
+                    else -> null
+                }
+                if (release != null) {
+                    if (status is UpdateStatus.Available) {
+                        OutlinedButton(
+                            onClick = vm::showUpdateDialog,
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Что нового") }
+                    }
+                    TextButton(
+                        onClick = { vm.openReleasePage(release) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Открыть страницу релиза") }
+                }
+            }
+        }
+
+        Card {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Проверять автоматически", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = "При запуске приложения, не чаще раза в 6 часов.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.updateAutoCheck,
+                    onCheckedChange = vm::setUpdateAutoCheck
+                )
+            }
+        }
+
+        Text(
+            text = "Обновление скачивается с GitHub и устанавливается системным установщиком Android. " +
+                "При первой установке Android попросит разрешить «Установку неизвестных приложений» для «Мой цикл». " +
+                "Данные приложения при обновлении сохраняются.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(16.dp))
     }
 }
 
